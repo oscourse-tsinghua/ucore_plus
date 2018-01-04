@@ -194,6 +194,7 @@ void dev_init(void)
 #endif
 
 	init_device(disk);
+	init_device(disk_partition);
 }
 
 /*
