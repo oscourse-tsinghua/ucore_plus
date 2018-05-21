@@ -147,7 +147,6 @@ case $UCONFIG_ARCH in
         exec $QEMU -m 512 \
             -hda $BUILD_DIR/kernel.img$TEST_POSTFIX \
             -drive file=$BUILD_DIR/sfs.img$TEST_POSTFIX,media=disk,cache=writeback,index=2 \
-            -drive file=yaffs_disk.img,media=disk,cache=writeback,index=3 \
             -net nic,model=e1000 -net dump,file=/tmp/vm0.pcap \
             -net user,id=mynet0,net=192.168.76.0/24,hostfwd=tcp::10022-:22 \
             $EXTRA_OPT

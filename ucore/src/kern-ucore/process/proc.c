@@ -953,9 +953,9 @@ int program_count, struct mm_struct *mm, int fd, off_t bias)
     start = ROUNDDOWN(start, PGSIZE);
     end = ROUNDUP(end, PGSIZE);
     int program_page_count = (end - start) / PGSIZE;
-    pte_t* pte = get_pte(mm->pgdir, start, 0);
     for(int i = 0; i < program_page_count; i++) {
-      ptep_set_perm(&pte[i], ptep_get_perm(&pte[i], ~(PTE_W | PTE_U)) | perm);
+      pte_t* pte = get_pte(mm->pgdir, start +PGSIZE*i, 0);
+      ptep_set_perm(pte, ptep_get_perm(pte, ~(PTE_W | PTE_U)) | perm);
     }
   }
   return 0;
