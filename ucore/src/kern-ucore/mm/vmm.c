@@ -38,6 +38,7 @@
    struct vma_struct * find_vma(struct mm_struct *mm, uintptr_t addr)
    local functions
    inline void check_vma_overlap(struct vma_struct *prev, struct vma_struct *next)
+   inline int check_vma_overlap_no_assert(struct vma_struct *prev, struct vma_struct *next)
    inline struct vma_struct * find_vma_rb(rb_tree *tree, uintptr_t addr)
    inline void insert_vma_rb(rb_tree *tree, struct vma_struct *vma, ....
    inline int vma_compare(rb_node *node1, rb_node *node2)
@@ -274,6 +275,18 @@ check_vma_overlap(struct vma_struct *prev, struct vma_struct *next)
 	assert(next->vm_start < next->vm_end);
 }
 
+// check_vma_overlap_no_assert - check if vma1 overlaps vma2, but would return -E_INVAL if fails
+static inline int
+check_vma_overlap_no_assert(struct vma_struct *prev, struct vma_struct *next)
+{
+	if (prev->vm_start < prev->vm_end && prev->vm_end <= next->vm_start
+		&& next->vm_start < next->vm_end) {
+			return 0;
+		} else {
+			return -E_INVAL;
+		}
+}
+
 // insert_vma_rb - insert vma in rb tree according vma->start_addr
 static inline void
 insert_vma_rb(rb_tree * tree, struct vma_struct *vma,
@@ -286,6 +299,50 @@ insert_vma_rb(rb_tree * tree, struct vma_struct *vma,
 		*vma_prevp = (prev != NULL) ? rbn2vma(prev, rb_link) : NULL;
 	}
 }
+
+// check_vma_struct_overlap: checks if the vma is valid and does't overlap with others
+int check_vma_struct_overlap(struct mm_struct *mm, struct vma_struct *vma)
+{
+	if (!(vma->vm_start < vma->vm_end)) {
+		return -E_INVAL;
+	}
+
+	list_entry_t *list = &(mm->mmap_list);
+	list_entry_t *le_prev = list, *le_next;
+	if (mm->mmap_tree != NULL) {
+		struct vma_struct *mmap_prev;
+		insert_vma_rb(mm->mmap_tree, vma, &mmap_prev);
+		if (mmap_prev != NULL) {
+			le_prev = &(mmap_prev->list_link);
+		}
+	} else {
+		list_entry_t *le = list;
+		while ((le = list_next(le)) != list) {
+			struct vma_struct *mmap_prev = le2vma(le, list_link);
+			if (mmap_prev->vm_start > vma->vm_start) {
+				break;
+			}
+			le_prev = le;
+		}
+	}
+
+	le_next = list_next(le_prev);
+
+	if (le_prev != list) {
+		int subret = check_vma_overlap_no_assert(le2vma(le_prev, list_link), vma);
+		if (subret != 0) {
+			return subret;
+		}
+	}
+	if (le_next != list) {
+		int subret = check_vma_overlap_no_assert(vma, le2vma(le_next, list_link));
+		if (subret != 0) {
+			return subret;
+		}
+	}
+	return 0;
+}
+
 
 // insert_vma_struct -insert vma in mm's rb tree link & list link
 void insert_vma_struct(struct mm_struct *mm, struct vma_struct *vma)
@@ -399,6 +456,12 @@ mm_map(struct mm_struct *mm, uintptr_t addr, size_t len, uint32_t vm_flags,
 	if ((vma = vma_create(start, end, vm_flags)) == NULL) {
 		goto out;
 	}
+
+	int subret = check_vma_struct_overlap(mm, vma);
+	if (subret != 0) {
+		return subret; 
+	}
+
 	insert_vma_struct(mm, vma);
 	if (vma_store != NULL) {
 		*vma_store = vma;
