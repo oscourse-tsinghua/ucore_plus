@@ -177,7 +177,7 @@ int vfs_lookup_parent(char *path, struct inode **node_store, char **endp)
 		return ret;
 	}
 	ret =
-	    (*path != '\0') ? vop_lookup_parent(node, subpath, node_store,
+	    (*path != '\0' && *path != '/') ? vop_lookup_parent(node, subpath, node_store,
 						endp) : -E_INVAL;
 	vop_ref_dec(node);
 	return ret;

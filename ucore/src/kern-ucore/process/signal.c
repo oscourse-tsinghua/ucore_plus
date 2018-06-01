@@ -183,6 +183,9 @@ int do_sigaction(int sign, const struct sigaction *act, struct sigaction *old)
 #ifdef __SIGDEBUG
 	kprintf("do_sigaction(): sign = %d, pid = %d\n", sign, current->pid);
 #endif
+	if (sign > 64 || sign <= 0) {
+		return -E_INVAL;
+	}
 	struct sigaction *k = &(get_si(current)->sighand->action[sign - 1]);
 
 	if (k == NULL) {
