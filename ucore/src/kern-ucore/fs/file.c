@@ -649,6 +649,10 @@ void *linux_regfile_mmap2(void *addr, size_t len, int prot, int flags, int fd,
 	if (!(flags & MAP_ANONYMOUS)) {
     struct file_desc_table *desc_table = fs_get_desc_table(current->fs_struct);
     struct file* file = file_desc_table_get_file(desc_table, fd);
+	
+	if(file == NULL) 
+		goto out_unlock;
+
 #ifdef ARCH_ARM
 		vma_mapfile(vma, file, off << 12, current->fs_struct);
 #else
