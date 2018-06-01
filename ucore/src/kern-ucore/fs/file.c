@@ -376,8 +376,10 @@ int file_dup(int fd1, int fd2)
     fd2 = file_desc_table_get_unused(desc_table);
   }
 
-  //Now let fd2 become a duplication for fd1.
-  file_desc_table_associate(desc_table, fd2, file);
+  if (fd2 >= 0 && fd2 < desc_table->capacity) {
+	//Now let fd2 become a duplication for fd1.
+	file_desc_table_associate(desc_table, fd2, file);
+  }
 
   //fd2 is returned.
 	return fd2;
